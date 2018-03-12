@@ -66,3 +66,5 @@ profile_default
 # vim/vi backup and swap files
 *~
 .*.swp
+
+fontconfig
