@@ -87,7 +87,7 @@ class EigerSimulatedFilePlugin(Device, FileStoreBase):
         # logger.debug("Inserting resource with filename %s", fn)
         self._resource = self._reg.register_resource(
             'AD_EIGER2',
-            str(self.fs_root), fn,
+            str(self.reg_root), fn,
             {'images_per_file': ipf})
 
     def generate_datum(self, key, timestamp, datum_kwargs):
@@ -148,6 +148,21 @@ class EigerBase(AreaDetector):
     @property
     def hints(self):
         return {'fields': [self.stats1.total.name]}
+
+    def read(streaming=False):
+        '''
+            This is a test of using streaming read.
+            Ideally, this should be handled by a new _stream_attrs property.
+            For now, we just check for a streaming key in read and
+            call super() if False, or read the one key we know we should read
+            if True.
+        '''
+        if streaming:
+            key = self._image_name  # this comes from the SingleTrigger mixin
+            return {key: super().read()[key]}
+        else:
+            return super().read()
+
 
 
 class EigerSingleTrigger(SingleTrigger, EigerBase):
