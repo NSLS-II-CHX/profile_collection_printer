@@ -149,20 +149,6 @@ class EigerBase(AreaDetector):
     def hints(self):
         return {'fields': [self.stats1.total.name]}
 
-    def read(streaming=False):
-        '''
-            This is a test of using streaming read.
-            Ideally, this should be handled by a new _stream_attrs property.
-            For now, we just check for a streaming key in read and
-            call super() if False, or read the one key we know we should read
-            if True.
-        '''
-        if streaming:
-            key = self._image_name  # this comes from the SingleTrigger mixin
-            return {key: super().read()[key]}
-        else:
-            return super().read()
-
 
 
 class EigerSingleTrigger(SingleTrigger, EigerBase):
