@@ -81,7 +81,7 @@ class EigerSimulatedFilePlugin(Device, FileStoreBase):
         set_and_wait(self.file_path, write_path)
         set_and_wait(self.file_write_name_pattern, '{}_$id'.format(res_uid))
         super().stage()
-        fn = (PurePath(self.file_path.get()) / res_uid).relative_to(self.fs_root)
+        fn = (PurePath(self.file_path.get()) / res_uid).relative_to(self.reg_root)
 
         ipf = int(self.file_write_images_per_file.get())
         # logger.debug("Inserting resource with filename %s", fn)
