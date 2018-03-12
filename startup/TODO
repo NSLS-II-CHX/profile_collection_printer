@@ -1,0 +1,10 @@
+* Refactor the following files which use caput:
+    * 30-user.py
+    * 31-capillaries.py
+    * 93-point-detector.py
+    * 94-gisaxs-align.py
+    * 96_HDM.py
+    * 99_bluesky.py  # calls RE() inside a func
+* Refactor 35_data_archiver.py to use Archiver Appliance integration.
+* Remove 81_use_values.py as redundant to an existing EpicsMotor method.
+* Upstream rerun_macro, which is useful.
