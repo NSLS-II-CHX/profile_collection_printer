@@ -160,20 +160,20 @@ def goto_timepix():
 def goto_4m():
 #    caput('XF:11IDB-ES{Det:SAXS-Ax:X}Mtr.VAL',477.9539)
 #    caput('XF:11IDB-ES{Det:SAXS-Ax:Y}Mtr.VAL',83.7567)
-    caput('XF:11IDB-ES{Det:SAXS-Ax:X}Mtr.VAL',118.459)
-    caput('XF:11IDB-ES{Det:SAXS-Ax:Y}Mtr.VAL',-124.357)
+    caput('XF:11IDB-ES{Det:SAXS-Ax:X}Mtr.VAL', 132.9603)
+    caput('XF:11IDB-ES{Det:SAXS-Ax:Y}Mtr.VAL',-133.9979)
 
 def ct_500k(expt=.0001,frame_rate=9000,imnum=1,comment='eiger500K image'):
     caput('XF:11IDB-ES{Det:Eig500K}cam1:FWClear',1)   #remove files from detector
     caput('XF:11IDB-ES{Det:Eig500K}cam1:ArrayCounter',0)
-    eiger500K_single.photon_energy.put(9652.0)
+    eiger500k_single.photon_energy.put(9652.0)
     #add some metadata:
     RE.md['transmission']=att.get_T()
     #RE.md['T_yoke']=str(caget('XF:11IDB-ES{Env:01-Chan:C}T:C-I'))
-    eiger500K_single.cam.num_images.put(imnum)
-    eiger500K_single.cam.acquire_time.put(expt)
-    eiger500K_single.cam.acquire_period.put(max([0.000112,1./frame_rate]))
-    RE(count([eiger500K_single]),Measurement=comment)
+    eiger500k_single.cam.num_images.put(imnum)
+    eiger500k_single.cam.acquire_time.put(expt)
+    eiger500k_single.cam.acquire_period.put(max([0.000112,1./frame_rate]))
+    RE(count([eiger500k_single]),Measurement=comment)
     #remove meta data keys
     a=RE.md.pop('transmission')
     #a=RE.md.pop('T_yoke')
@@ -318,6 +318,14 @@ def snap(det='eiger4m',expt=0.1,comment='Single image'):
         caput('XF:11IDB-ES{Det:Eig1M}cam1:AcquireTime',expt)
         caput('XF:11IDB-ES{Det:Eig1M}cam1:AcquirePeriod',expt)
         RE(count(dets),Measurement=comment)
+    elif det == 'eiger500k':
+        dets=[eiger500k_single]
+        caput('XF:11IDB-ES{Det:Eig500K}cam1:NumImages',1)
+        caput('XF:11IDB-ES{Det:Eig500K}cam1:NumTriggers',1)
+        caput('XF:11IDB-ES{Det:Eig500K}cam1:AcquireTime',expt)
+        caput('XF:11IDB-ES{Det:Eig500K}cam1:AcquirePeriod',expt)
+        RE(count(dets),Measurement=comment)
+
 
 ###### sample-detector distance macros for SAXS ##########
 
@@ -367,16 +375,18 @@ def calc_saxs_sd(tube_nr,z1,detector='eiger4m'):
     print('sample-detector distance using tube_nr: '+str(tube_nr)+' detector: '+detector+' at Z1 position '+str(z1)+': '+str(sd)+'mm')
     return sd
 
-def update_saxs_sd(tube_nr,detector='eiger4m'):
+def update_saxs_sd(tube_nr,detector='eiger4m/eiger500k'):
     '''
     get sample detector distance for SAXS instrument
     based on tube nr, detector and Z1 position and update metadata
-    calling sequence: update_saxs_sd(tube_nr,detector='eiger4m')
+    calling sequence: update_saxs_sd(tube_nr,detector='eiger4m/eiger500k')
     '''
     sd=get_saxs_sd(tube_nr,detector='eiger4m')
-    if detector == 'eiger4m':
+    if detector == 'eiger4m/eiger500k':
         print('updating metadata in Eiger4M HDF5 file...')
         caput('XF:11IDB-ES{Det:Eig4M}cam1:DetDist',sd/1000.)
+        print('updating metadata in Eiger500k HDF5 file...')
+        caput('XF:11IDB-ES{Det:Eig500K}cam1:DetDist',(sd+29.9)/1000.)
     else: raise param_Exception('error: detector '+detector+'currently not defined...')
     
 
@@ -542,18 +552,22 @@ def prep_series_feedback():
     #RE(mv(bpm2_feedback_selector_a, 1))
     
 # Lutz's test Nov 08 start
-def series(det='eiger4m',shutter_mode='single',expt=.1,acqp='auto',imnum=5,comment='', feedback_on=False, use_xbpm=False,OAV_mode='none'):
+def series(det='eiger4m',shutter_mode='single',expt=.1,acqp='auto',imnum=5,comment='', feedback_on=False, analysis='', use_xbpm=False,OAV_mode='none'):
     """
-    det='eiger1m' / 'eiger4m'
+    det='eiger1m' / 'eiger4m' / 'eiger500k'
     shutter_mode='single' / 'multi'
     expt: exposure time [s]
     acqp: acquire period [s] OR 'auto': acqp=expt
     imnum: number of frames
     feedback_on=False, (True): open fast shutter, switch off feedback on HDM Epics loop, switch on feedback on DBPM
+    analysis='' gives a hint to jupyter pipeline to run a certain analysis, e.g. analysis='iso' uses isotropic Q-rings, analysis='qphi' uses phi-sliced Q-rings, etc.
     comment: free comment (string) shown in Olog and attached as RE.md['Measurement']=comment
     update 01/23/2017:  for imnum <100, set chunk size to 10 images to force download. Might still cause problems under certain conditions!!
     yugang add use_xbpm option at Sep 13, 2017 for test fast shutter by using xbpm
     OAV_mode added by LW 01/18/2018: 'none': no image data recorded, 'single': record single image at start of Eiger series, 'start_end': record single image at start and end of Eiger series, 'movie': take contineous stream of images for approximate duration of Eiger series
+    eiger500k added by LW 03/20/2018, Eiger500k multi shutter NOT yet implemented,
+              debug by YG 03/22/2018, fix a bug and add Eiger500K multi mode
+    03/26/2018: added hook 'analysis' for jupyter pipeline
 
     """
     print('start of series: '+time.ctime())
@@ -583,13 +597,33 @@ def series(det='eiger4m',shutter_mode='single',expt=.1,acqp='auto',imnum=5,comme
             caput('XF:11IDB-ES{Det:Eig4M}cam1:FWNImagesPerFile',10)
         else: 
             caput('XF:11IDB-ES{Det:Eig4M}cam1:FWNImagesPerFile',100)
+    elif det == 'eiger500k':
+        if expt <.000112:
+            expt=.000112
+        else:
+            pass
+        seqid=caget('XF:11IDB-ES{Det:Eig500K}cam1:SequenceId')+1
+        idpath=caget('XF:11IDB-ES{Det:Eig500K}cam1:FilePath {"longString":true}')
+        caput('XF:11IDB-ES{Det:Eig500K}cam1:FWClear',1)    #remove files from the detector DISABLE FOR MANUAL DOWNLOAD!!!
+        caput('XF:11IDB-ES{Det:Eig500K}cam1:ArrayCounter',0) # set image counter to '0'
+        if imnum < 500:                                                            # set chunk size
+            caput('XF:11IDB-ES{Det:Eig500K}cam1:FWNImagesPerFile',10)
+        else: 
+            caput('XF:11IDB-ES{Det:Eig500K}cam1:FWNImagesPerFile',100)
     #print('setting detector paramters: '+time.ctime())
+    if acqp=='auto':
+        acqp=expt
+
+
     if shutter_mode=='single':
         if det == 'eiger1m':
             detector=eiger1m_single
         if det == 'eiger4m':
             detector=eiger4m_single
-        detector.cam.acquire_time.value=expt       # setting up exposure for eiger1m/4m_single
+        if det == 'eiger500k':            
+            detector=eiger500k_single
+
+        detector.cam.acquire_time.value=expt       # setting up exposure for eiger500k/1m/4m_single
         detector.cam.acquire_period.value=acqp
         detector.cam.num_images.value=imnum
         #print('adding metadata: '+time.ctime())
@@ -635,6 +669,19 @@ def series(det='eiger4m',shutter_mode='single',expt=.1,acqp='auto',imnum=5,comme
             caput('XF:11IDB-ES{Det:Eig4M}ExposureTime-SP',expt)
             caput('XF:11IDB-ES{Det:Eig4M}AcquirePeriod-SP',acqp)
             detector.cam.acquire_period.value=acqp   # ignored in data acquisition, but gets correct metadata in HDF5 file
+
+        if det == 'eiger500k':
+            detector=eiger500k
+
+            if expt+caget('XF:11IDB-ES{Det:Eig500K}ExposureDelay-SP') >= acqp or acqp<.019:
+                raise series_Exception('error: exposure time +shutter time > acquire period or shutter requested to go >50Hz')
+            caput('XF:11IDB-ES{Det:Eig500K}Mode-Cmd',1)    #enable auto-shutter-mode
+            caput('XF:11IDB-ES{Det:Eig500K}NumImages-SP',imnum)
+            caput('XF:11IDB-ES{Det:Eig500K}ExposureTime-SP',expt)
+            caput('XF:11IDB-ES{Det:Eig500K}AcquirePeriod-SP',acqp)
+            detector.cam.acquire_period.value=acqp   # ignored in data acquisition, but gets correct metadata in HDF5 file
+            #print('here')
+
         RE.md['exposure time']=expt        # add metadata information about this run
         RE.md['acquire period']=acqp
         RE.md['shutter mode']=shutter_mode
@@ -643,10 +690,12 @@ def series(det='eiger4m',shutter_mode='single',expt=.1,acqp='auto',imnum=5,comme
         RE.md['sequence id']=str(seqid)
         RE.md['transmission']=att.get_T()*att2.get_T()
         RE.md['OAV_mode']=OAV_mode
+        
     #print('adding experiment specific metadata: '+time.ctime())
     ## add experiment specific metadata:
     RE.md['T_yoke']=str(caget('XF:11IDB-ES{Env:01-Chan:C}T:C-I'))
     RE.md['T_sample']=str(caget('XF:11IDB-ES{Env:01-Chan:D}T:C-I'))
+    RE.md['analysis']=analysis
     if caget('XF:11IDB-BI{XBPM:02}Fdbk:AEn-SP') == 1 or feedback_on == True:
         RE.md['feedback_x']='on'
     elif caget('XF:11IDB-BI{XBPM:02}Fdbk:AEn-SP') == 0:
@@ -707,6 +756,7 @@ def series(det='eiger4m',shutter_mode='single',expt=.1,acqp='auto',imnum=5,comme
     a=RE.md.pop('feedback_y')
     a=RE.md.pop('transmission')
     a=RE.md.pop('OAV_mode')
+    a=RE.md.pop('analysis')
 
 class series_Exception(Exception):
     pass

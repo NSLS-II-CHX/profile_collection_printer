@@ -250,8 +250,8 @@ def set_eiger_defaults(eiger):
 
 
 # Eiger 500k using internal trigger
-# eiger500K_single = EigerSingleTrigger('XF:11IDB-ES{Det:Eig500K}', name='eiger500K_single')
-# set_eiger_defaults(eiger500K_single)
+eiger500k_single = EigerSingleTrigger('XF:11IDB-ES{Det:Eig500K}', name='eiger500K_single')
+set_eiger_defaults(eiger500k_single)
 
 # Eiger 1M using internal trigger
 eiger1m_single = EigerSingleTrigger('XF:11IDB-ES{Det:Eig1M}',
@@ -263,6 +263,12 @@ eiger4m_single = EigerSingleTrigger('XF:11IDB-ES{Det:Eig4M}',
                                     name='eiger4m_single')
 set_eiger_defaults(eiger4m_single)
 
+
+
+# Eiger 500K using fast trigger assembly
+eiger500k = EigerFastTrigger('XF:11IDB-ES{Det:Eig500K}', name='eiger500k')
+set_eiger_defaults(eiger500k)
+
 # Eiger 1M using fast trigger assembly
 eiger1m = EigerFastTrigger('XF:11IDB-ES{Det:Eig1M}', name='eiger1m')
 set_eiger_defaults(eiger1m)
@@ -270,6 +276,9 @@ set_eiger_defaults(eiger1m)
 # Eiger 4M using fast trigger assembly
 eiger4m = EigerFastTrigger('XF:11IDB-ES{Det:Eig4M}', name='eiger4m')
 set_eiger_defaults(eiger4m)
+
+
+
 
 
 def manual_count(det=eiger4m_single):
