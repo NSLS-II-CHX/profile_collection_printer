@@ -163,6 +163,54 @@ class EigerSingleTrigger(SingleTrigger, EigerBase):
         set_and_wait(self.special_trigger_button, 1)
         return status
 
+    def read(self, *args, streaming=False, **kwargs):
+        '''
+            This is a test of using streaming read.
+            Ideally, this should be handled by a new _stream_attrs property.
+            For now, we just check for a streaming key in read and
+            call super() if False, or read the one key we know we should read
+            if True.
+
+            Parameters
+            ----------
+            streaming : bool, optional
+                whether to read streaming attrs or not
+        '''
+        #ret = super().read()
+        #print("super read() : {}".format(ret))
+        #return ret
+        if streaming:
+            key = self._image_name  # this comes from the SingleTrigger mixin
+            read_dict = super().read()
+            ret = OrderedDict({key: read_dict[key]})
+            return ret
+        else:
+            ret = super().read(*args, **kwargs)
+            return ret
+
+    def describe(self, *args, streaming=False, **kwargs):
+        '''
+            This is a test of using streaming read.
+            Ideally, this should be handled by a new _stream_attrs property.
+            For now, we just check for a streaming key in read and
+            call super() if False, or read the one key we know we should read
+            if True.
+
+            Parameters
+            ----------
+            streaming : bool, optional
+                whether to read streaming attrs or not
+        '''
+        if streaming:
+            key = self._image_name  # this comes from the SingleTrigger mixin
+            read_dict = super().describe()
+            ret = OrderedDict({key: read_dict[key]})
+            return ret
+        else:
+            ret = super().describe(*args, **kwargs)
+            return ret
+
+
 
 class FastShutterTrigger(Device):
     """This represents the fast trigger *device*.
