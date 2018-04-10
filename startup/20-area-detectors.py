@@ -15,6 +15,7 @@ from ophyd import Component as Cpt, Signal
 from ophyd.utils import set_and_wait
 from pathlib import PurePath
 from bluesky.plan_stubs import stage, unstage, open_run, close_run, trigger_and_read, pause
+from collections import OrderedDict
 
 
 class TIFFPluginWithFileStore(TIFFPlugin, FileStoreTIFFIterativeWrite):
