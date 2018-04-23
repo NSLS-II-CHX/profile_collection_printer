@@ -238,6 +238,25 @@ class EigerFastTrigger(EigerBase):
         self.dispatch('image', ttime.time())
         return self.tr.trigger()
 
+class EigerManualTrigger(SingleTrigger, EigerBase):
+    '''
+        Like Eiger Single Trigger but the triggering is done through the
+        special trigger button.
+    '''
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+        self.stage_sigs['cam.trigger_mode'] = 0
+        self.stage_sigs['shutter_mode'] = 1  # 'EPICS PV'
+        self.stage_sigs.update({'num_triggers': 1})
+        self.stage_sigs.update({'manual_trigger': 1})
+        self.stage_sigs.update({'cam.acquire': 1})
+        # override with special trigger button, not acquire
+        self._acquisition_signal = self.special_trigger_button
+
+    def trigger(self):
+        status = super().trigger()
+        return status
+
 # test_trig4M = FastShutterTrigger('XF:11IDB-ES{Trigger:Eig4M}', name='test_trig4M')
 
 
@@ -329,6 +348,16 @@ eiger4m = EigerFastTrigger('XF:11IDB-ES{Det:Eig4M}', name='eiger4m')
 set_eiger_defaults(eiger4m)
 
 
+
+# setup manual eiger for 1d scans
+# prototype 
+# from ophyd.sim import motor1
+# eiger4m_manual.num_triggers.put(10)
+# RE(dscan([eiger4m_manual], motor1, 0, 1, 10))
+# this hangs because trigger() returns a self._status_type(self)
+# which is a status object that never completes
+eiger4m_manual = EigerManualTrigger('XF:11IDB-ES{Det:Eig4M}', name='eiger4m_manual')
+set_eiger_defaults(eiger4m_manual)
 
 
 
