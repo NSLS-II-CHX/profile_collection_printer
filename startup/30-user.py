@@ -712,23 +712,23 @@ def series(det='eiger4m',shutter_mode='single',expt=.1,acqp='auto',imnum=5,comme
     if OAV_mode == 'none':
         detlist=[detector]
     elif OAV_mode == 'single':
-        detlist=[detector,xray_eye3_writing] ##!!! need to change to OAV
-        org_pt=caget('XF:11IDB-BI{Cam:08}cam1:AcquirePeriod_RBV')
-        org_ni=caget('XF:11IDB-BI{Cam:08}cam1:NumImages_RBV')
-        caput('XF:11IDB-BI{Cam:08}cam1:NumImages',1,wait=True)
+        detlist=[detector,OAV_writing] ## OAV  !!!!!
+        org_pt=caget('XF:11IDB-BI{Cam:10}cam1:AcquirePeriod_RBV')
+        org_ni=caget('XF:11IDB-BI{Cam:10}cam1:NumImages_RBV')
+        caput('XF:11IDB-BI{Cam:10}cam1:NumImages',1,wait=True)
     elif OAV_mode == 'start_end':
-        detlist=[detector,xray_eye3_writing] ##!!! need to change to OAV
-        org_pt=caget('XF:11IDB-BI{Cam:08}cam1:AcquirePeriod_RBV')
-        org_ni=caget('XF:11IDB-BI{Cam:08}cam1:NumImages_RBV')        
+        detlist=[detector,OAV_writing] ##!!! need to change to OAV
+        org_pt=caget('XF:11IDB-BI{Cam:10}cam1:AcquirePeriod_RBV')
+        org_ni=caget('XF:11IDB-BI{Cam:10}cam1:NumImages_RBV')        
         pt=(expt+acqp)*imnum #period between two images to span Eiger series (exposure time for OAV image neglected)
-        caput('XF:11IDB-BI{Cam:08}cam1:NumImages',2,wait=True)
-        caput('XF:11IDB-BI{Cam:08}cam1:AcquirePeriod',pt,wait=True)
+        caput('XF:11IDB-BI{Cam:10}cam1:NumImages',2,wait=True)
+        caput('XF:11IDB-BI{Cam:10}cam1:AcquirePeriod',pt,wait=True)
     elif OAV_mode == 'movie':
-        detlist=[detector,xray_eye3_writing] ##!!! need to change to OAV
-        org_pt=caget('XF:11IDB-BI{Cam:08}cam1:AcquirePeriod_RBV')
-        org_ni=caget('XF:11IDB-BI{Cam:08}cam1:NumImages_RBV')
-        ni=(expt+acqp)*imnum/(caget('XF:11IDB-BI{Cam:08}cam1:AcquireTime')+caget('XF:11IDB-BI{Cam:08}cam1:AcquirePeriod'))
-        caput('XF:11IDB-BI{Cam:08}cam1:NumImages',np.ceil(ni),wait=True)
+        detlist=[detector,OAV_writing] ##!!! need to change to OAV
+        org_pt=caget('XF:11IDB-BI{Cam:10}cam1:AcquirePeriod_RBV')
+        org_ni=caget('XF:11IDB-BI{Cam:10}cam1:NumImages_RBV')
+        ni=(expt+acqp)*imnum/(caget('XF:11IDB-BI{Cam:10}cam1:AcquireTime')+caget('XF:11IDB-BI{Cam:10}cam1:AcquirePeriod'))
+        caput('XF:11IDB-BI{Cam:10}cam1:NumImages',np.ceil(ni),wait=True)
     else: raise series_Exception('error: OAV_mode needs to be none|single|start_end|movie...')
     if use_xbpm:
         caput( 'XF:11IDB-BI{XBPM:02}FaSoftTrig-SP',1,wait=True) #yugang add at Sep 13, 2017 for test fast shutter by using xbpm
@@ -738,9 +738,9 @@ def series(det='eiger4m',shutter_mode='single',expt=.1,acqp='auto',imnum=5,comme
     #RE(count([detector]),Measurement=comment)  ### ACQUISITION
     RE(count(detlist),Measurement=comment)  ### testing camera images taken simultaneously
     # setting image number and period back for OAV camera:
-    if OAV_mode != 'none':      ####!!! NEED TO CHANGE TO OAV PVs
-        caput('XF:11IDB-BI{Cam:08}cam1:NumImages',org_ni)
-        caput('XF:11IDB-BI{Cam:08}cam1:AcquirePeriod',org_pt)
+    if OAV_mode != 'none':      ####! OAV !!!!!
+        caput('XF:11IDB-BI{Cam:10}cam1:NumImages',org_ni)
+        caput('XF:11IDB-BI{Cam:10}cam1:AcquirePeriod',org_pt)
 
     #print('remove metadata: '+time.ctime())    
     a=RE.md.pop('exposure time')        # remove eiger series specific meta data (need better way to remove keys 'silently'....)
@@ -770,8 +770,8 @@ def set_temperature(Tsetpoint,heat_ramp=3,cool_ramp=0,log_entry='on'):       # M
     cool_ramp: ramping speed [deg.C/min] on cooling. '0' -> ramp off!
     log_entry: 'on' / 'off'  -> make olog entry when changing temperature ('try', ignored, if Olog is down...)
     """
-    if heat_ramp > 3.:
-        heat_ramp=3.
+    if heat_ramp > 5.:
+        heat_ramp=5.
     else: pass
     if cool_ramp==0:
         cool_ramp_on=0

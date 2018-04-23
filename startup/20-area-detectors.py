@@ -246,10 +246,12 @@ xray_eye1 = StandardProsilica('XF:11IDA-BI{Bpm:1-Cam:1}', name='xray_eye1')
 xray_eye2 = StandardProsilica('XF:11IDB-BI{Mon:1-Cam:1}', name='xray_eye2')
 xray_eye3 = StandardProsilica('XF:11IDB-BI{Cam:08}', name='xray_eye3')
 xray_eye4 = StandardProsilica('XF:11IDB-BI{Cam:09}', name='xray_eye4')
+OAV = StandardProsilica('XF:11IDB-BI{Cam:10}', name='OAV')
 xray_eye1_writing = StandardProsilicaWithTIFF('XF:11IDA-BI{Bpm:1-Cam:1}', name='xray_eye1')
 xray_eye2_writing = StandardProsilicaWithTIFF('XF:11IDB-BI{Mon:1-Cam:1}', name='xray_eye2')
 xray_eye3_writing = StandardProsilicaWithTIFF('XF:11IDB-BI{Cam:08}', name='xray_eye3')
 xray_eye4_writing = StandardProsilicaWithTIFF('XF:11IDB-BI{Cam:09}', name='xray_eye4')
+OAV_writing = StandardProsilicaWithTIFF('XF:11IDB-BI{Cam:10}', name='OAV')
 fs1 = StandardProsilica('XF:11IDA-BI{FS:1-Cam:1}', name='fs1')
 fs2 = StandardProsilica('XF:11IDA-BI{FS:2-Cam:1}', name='fs2')
 fs_wbs = StandardProsilica('XF:11IDA-BI{BS:WB-Cam:1}', name='fs_wbs')
@@ -259,7 +261,7 @@ fs_pbs = StandardProsilica('XF:11IDA-BI{BS:PB-Cam:1}', name='fs_pbs')
 
 all_standard_pros = [xray_eye1, xray_eye2, xray_eye3, xray_eye4,
                      xray_eye1_writing, xray_eye2_writing,
-                     xray_eye3_writing, xray_eye4_writing, fs1, fs2,
+                     xray_eye3_writing, xray_eye4_writing, OAV, OAV_writing, fs1, fs2,
                      fs_wbs, fs_pbs]
 #                     xray_eye3_writing, fs1, fs2, dcm_cam, fs_wbs, fs_pbs]
 for camera in all_standard_pros:
@@ -275,7 +277,7 @@ for camera in all_standard_pros:
     camera.stage_sigs[camera.cam.trigger_mode] = 'Fixed Rate'
 
 for camera in [xray_eye1_writing, xray_eye2_writing,
-               xray_eye3_writing, xray_eye4_writing]:
+               xray_eye3_writing, xray_eye4_writing, OAV_writing]:
     camera.read_attrs.append('tiff')
     camera.tiff.read_attrs = []
 
