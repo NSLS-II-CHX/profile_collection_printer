@@ -247,7 +247,7 @@ class EigerManualTrigger(SingleTrigger, EigerBase):
         super().__init__(*args, **kwargs)
         self.stage_sigs['cam.trigger_mode'] = 0
         self.stage_sigs['shutter_mode'] = 1  # 'EPICS PV'
-        self.stage_sigs.update({'num_triggers': 1})
+        self.stage_sigs.update({'num_triggers': 10})
         self.stage_sigs.update({'manual_trigger': 1})
         self.stage_sigs.update({'cam.acquire': 1})
         # override with special trigger button, not acquire
@@ -351,14 +351,17 @@ set_eiger_defaults(eiger4m)
 
 # setup manual eiger for 1d scans
 # prototype 
-# from ophyd.sim import motor1
-# eiger4m_manual.num_triggers.put(10)
-# RE(dscan([eiger4m_manual], motor1, 0, 1, 10))
-# this hangs because trigger() returns a self._status_type(self)
-# which is a status object that never completes
 eiger4m_manual = EigerManualTrigger('XF:11IDB-ES{Det:Eig4M}', name='eiger4m_manual')
 set_eiger_defaults(eiger4m_manual)
 
+def dscan_manual(det, motor, start, stop, num):
+    det.stage_sigs.update({'num_triggers': num})
+    yield from dscan([det], motor, start, stop, num)
+
+# from ophyd.sim import motor1
+#RE(dscan_manual(eiger4m_manual, motor1, 0, 1, 10))
+# this hangs because trigger() returns a self._status_type(self)
+# which is a status object that never completes
 
 
 def manual_count(det=eiger4m_single):
