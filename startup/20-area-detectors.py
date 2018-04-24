@@ -4,7 +4,8 @@ from datetime import datetime
 from ophyd import (ProsilicaDetector, SingleTrigger, TIFFPlugin,
                    ImagePlugin, StatsPlugin, DetectorBase, HDF5Plugin,
                    AreaDetector, EpicsSignal, EpicsSignalRO, ROIPlugin,
-                   TransformPlugin, ProcessPlugin, Device)
+                   TransformPlugin, ProcessPlugin, Device, DeviceStatus)
+from ophyd.device import Staged
 from ophyd.areadetector.cam import AreaDetectorCam
 from ophyd.areadetector.base import ADComponent, EpicsSignalWithRBV
 from ophyd.areadetector.filestore_mixins import (FileStoreTIFFIterativeWrite,
@@ -244,6 +245,7 @@ class EigerManualTrigger(SingleTrigger, EigerBase):
         special trigger button.
     '''
     def __init__(self, *args, **kwargs):
+        self._set_st = None
         super().__init__(*args, **kwargs)
         self.stage_sigs['cam.trigger_mode'] = 0
         self.stage_sigs['shutter_mode'] = 1  # 'EPICS PV'
@@ -253,13 +255,57 @@ class EigerManualTrigger(SingleTrigger, EigerBase):
         # override with special trigger button, not acquire
         self._acquisition_signal = self.special_trigger_button
 
+    #def trigger(self):
+        #status = super().trigger()
+        #return status
+
     def trigger(self):
-        status = super().trigger()
-        return status
+        ''' custom trigger for Eiger Manual'''
+        print("triggering")
+        if self._staged != Staged.yes:
+            raise RuntimeError("This detector is not ready to trigger."
+                               "Call the stage() method before triggering.")
+
+        if self._set_st is not None:
+            raise RuntimeError(f'trying to set {self.name}'
+                               ' while a set is in progress')
+
+        target_val = 0
+        trigger_val = 1
+
+        st = DeviceStatus(self)
+        if self.special_trigger_button.get() == target_val:
+            st._finished()
+            return st
+
+        tol = .1
+        # the logic here is that I want to check when the status is back to zero
+        def trigger_cb(value, timestamp, **kwargs):
+            print("changed : {}".format(value))
+            if np.abs(value-target_val) < tol:
+                self._set_st = None
+                self.special_trigger_button.clear_sub(trigger_cb)
+                st._finished()
+            elif np.abs(value-trigger_val) < tol:
+                # add callback again
+                # do nothing, let sub try again
+                pass
+            else:
+                self._set_st = None
+                self.special_trigger_button.clear_sub(trigger_cb)
+                st._finished(success=False)
+
+        self.special_trigger_button.subscribe(trigger_cb) 
+
+        self.special_trigger_button.put(1, wait=False)
+        self.dispatch(self._image_name, ttime.time())
+        return st
+
 
 # test_trig4M = FastShutterTrigger('XF:11IDB-ES{Trigger:Eig4M}', name='test_trig4M')
 
 
+'''
 ## This renaming should be reversed: no correspondance between CSS screens, PV names and ophyd....
 xray_eye1 = StandardProsilica('XF:11IDA-BI{Bpm:1-Cam:1}', name='xray_eye1')
 xray_eye2 = StandardProsilica('XF:11IDB-BI{Mon:1-Cam:1}', name='xray_eye2')
@@ -300,6 +346,7 @@ for camera in [xray_eye1_writing, xray_eye2_writing,
     camera.read_attrs.append('tiff')
     camera.tiff.read_attrs = []
 
+'''
 
 def set_eiger_defaults(eiger):
     """Choose which attributes to read per-step (read_attrs) or
