@@ -262,21 +262,31 @@ class EigerManualTrigger(SingleTrigger, EigerBase):
         self.file.resource_SPEC = "AD_EIGER_SLICE"
         self.file.image_slice = 0
         # monkey patch
-        self.stage_sigs['cam.trigger_mode'] = 0
-        self.stage_sigs['shutter_mode'] = 1  # 'EPICS PV'
-        self.stage_sigs.update({'num_triggers': 10})
-        self.stage_sigs.update({'manual_trigger': 1})
-        self.stage_sigs.update({'cam.acquire': 1})
         # override with special trigger button, not acquire
         #self._acquisition_signal = self.special_trigger_button
 
     def stage(self):
         self.file.image_slice = 0
         super().stage()
+        # stag sigs didnt seem t: work
+        # TODO : save original value
+        # and restore in unstage
+        self.cam.trigger_mode.put(0)
+        self.shutter_mode.put(1)  # 'EPICS PV'
+        self.num_triggers.put(10)
+        self.manual_trigger.put(1)
+        self.cam.acquire.put(1)
+        time.sleep(1)
 
     def unstage(self):
         self.file.image_slice = 0
         super().unstage()
+        #self.cam.trigger_mode.put(0)
+        #self.shutter_mode.put(1)  # 'EPICS PV'
+        #self.num_triggers.put(10)
+        self.manual_trigger.put(0)
+        self.cam.acquire.put(0)
+
 
     def trigger(self):
         ''' custom trigger for Eiger Manual'''
