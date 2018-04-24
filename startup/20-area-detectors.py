@@ -4,7 +4,8 @@ from datetime import datetime
 from ophyd import (ProsilicaDetector, SingleTrigger, TIFFPlugin,
                    ImagePlugin, StatsPlugin, DetectorBase, HDF5Plugin,
                    AreaDetector, EpicsSignal, EpicsSignalRO, ROIPlugin,
-                   TransformPlugin, ProcessPlugin, Device, DeviceStatus)
+                   TransformPlugin, ProcessPlugin, Device, DeviceStatus,)
+from ophyd.status import StatusBase
 from ophyd.device import Staged
 from ophyd.areadetector.cam import AreaDetectorCam
 from ophyd.areadetector.base import ADComponent, EpicsSignalWithRBV
@@ -74,6 +75,10 @@ class EigerSimulatedFilePlugin(Device, FileStoreBase):
     enable = SimpleNamespace(get=lambda: True)
 
     def __init__(self, *args, **kwargs):
+        self.sequence_id_offset = 1
+        # This is changed for when a datum is a slice
+        self.resource_SPEC = "AD_EIGER2"
+        self.image_slice = None
         super().__init__(*args, **kwargs)
         self._datum_kwargs_map = dict()  # store kwargs for each uid
 
@@ -88,7 +93,7 @@ class EigerSimulatedFilePlugin(Device, FileStoreBase):
         ipf = int(self.file_write_images_per_file.get())
         # logger.debug("Inserting resource with filename %s", fn)
         self._resource = self._reg.register_resource(
-            'AD_EIGER2',
+            self.resource_SPEC,
             str(self.reg_root), fn,
             {'images_per_file': ipf})
 
@@ -96,8 +101,12 @@ class EigerSimulatedFilePlugin(Device, FileStoreBase):
         # The detector keeps its own counter which is uses label HDF5
         # sub-files.  We access that counter via the sequence_id
         # signal and stash it in the datum.
-        seq_id = 1 + int(self.sequence_id.get())  # det writes to the NEXT one
+        seq_id = int(self.sequence_id_offset) + int(self.sequence_id.get())  # det writes to the NEXT one
+        #print('seq id offset : {}'.format(self.sequence_id_offset))
         datum_kwargs.update({'seq_id': seq_id})
+        if self.image_slice is not None:
+            datum_kwargs.update({'image_slice': self.image_slice})
+        #print('kwargs : {}'.format(datum_kwargs))
         return super().generate_datum(key, timestamp, datum_kwargs)
 
 
@@ -247,21 +256,30 @@ class EigerManualTrigger(SingleTrigger, EigerBase):
     def __init__(self, *args, **kwargs):
         self._set_st = None
         super().__init__(*args, **kwargs)
+        # in this case, we don't need this + 1 sequence id cludge
+        # this is because we write datum after image is acquired
+        self.file.sequence_id_offset = 0
+        self.file.resource_SPEC = "AD_EIGER_SLICE"
+        self.file.image_slice = 0
+        # monkey patch
         self.stage_sigs['cam.trigger_mode'] = 0
         self.stage_sigs['shutter_mode'] = 1  # 'EPICS PV'
         self.stage_sigs.update({'num_triggers': 10})
         self.stage_sigs.update({'manual_trigger': 1})
         self.stage_sigs.update({'cam.acquire': 1})
         # override with special trigger button, not acquire
-        self._acquisition_signal = self.special_trigger_button
+        #self._acquisition_signal = self.special_trigger_button
 
-    #def trigger(self):
-        #status = super().trigger()
-        #return status
+    def stage(self):
+        self.file.image_slice = 0
+        super().stage()
+
+    def unstage(self):
+        self.file.image_slice = 0
+        super().unstage()
 
     def trigger(self):
         ''' custom trigger for Eiger Manual'''
-        print("triggering")
         if self._staged != Staged.yes:
             raise RuntimeError("This detector is not ready to trigger."
                                "Call the stage() method before triggering.")
@@ -273,32 +291,25 @@ class EigerManualTrigger(SingleTrigger, EigerBase):
         target_val = 0
         trigger_val = 1
 
-        st = DeviceStatus(self)
+        st = StatusBase()
         if self.special_trigger_button.get() == target_val:
             st._finished()
             return st
 
-        tol = .1
+        # idea : look at the array counter and the trigger value
         # the logic here is that I want to check when the status is back to zero
-        def trigger_cb(value, timestamp, **kwargs):
-            print("changed : {}".format(value))
-            if np.abs(value-target_val) < tol:
-                self._set_st = None
-                self.special_trigger_button.clear_sub(trigger_cb)
-                st._finished()
-            elif np.abs(value-trigger_val) < tol:
-                # add callback again
-                # do nothing, let sub try again
-                pass
-            else:
-                self._set_st = None
-                self.special_trigger_button.clear_sub(trigger_cb)
-                st._finished(success=False)
+        def counter_cb(value, timestamp, **kwargs):
+            # whenevr it counts just move on
+            #print("changed : {}".format(value))
+            self._set_st = None
+            self.cam.array_counter.clear_sub(counter_cb)
+            st._finished()
 
-        self.special_trigger_button.subscribe(trigger_cb) 
+        self.cam.array_counter.subscribe(counter_cb, run=False) 
 
         self.special_trigger_button.put(1, wait=False)
         self.dispatch(self._image_name, ttime.time())
+        self.file.image_slice += 1
         return st
 
 
