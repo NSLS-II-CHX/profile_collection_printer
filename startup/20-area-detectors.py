@@ -102,11 +102,9 @@ class EigerSimulatedFilePlugin(Device, FileStoreBase):
         # sub-files.  We access that counter via the sequence_id
         # signal and stash it in the datum.
         seq_id = int(self.sequence_id_offset) + int(self.sequence_id.get())  # det writes to the NEXT one
-        #print('seq id offset : {}'.format(self.sequence_id_offset))
         datum_kwargs.update({'seq_id': seq_id})
         if self.image_slice is not None:
             datum_kwargs.update({'image_slice': self.image_slice})
-        #print('kwargs : {}'.format(datum_kwargs))
         return super().generate_datum(key, timestamp, datum_kwargs)
 
 
@@ -298,14 +296,7 @@ class EigerManualTrigger(SingleTrigger, EigerBase):
             raise RuntimeError(f'trying to set {self.name}'
                                ' while a set is in progress')
 
-        target_val = 0
-        trigger_val = 1
-
         st = StatusBase()
-        if self.special_trigger_button.get() == target_val:
-            st._finished()
-            return st
-
         # idea : look at the array counter and the trigger value
         # the logic here is that I want to check when the status is back to zero
         def counter_cb(value, timestamp, **kwargs):
@@ -315,11 +306,15 @@ class EigerManualTrigger(SingleTrigger, EigerBase):
             self.cam.array_counter.clear_sub(counter_cb)
             st._finished()
 
+        
+        # first subscribe a callback
         self.cam.array_counter.subscribe(counter_cb, run=False) 
 
+        # then call trigger on the PV
         self.special_trigger_button.put(1, wait=False)
         self.dispatch(self._image_name, ttime.time())
         self.file.image_slice += 1
+
         return st
 
 
