@@ -259,6 +259,15 @@ class EigerManualTrigger(SingleTrigger, EigerBase):
         self.file.sequence_id_offset = 0
         self.file.resource_SPEC = "AD_EIGER_SLICE"
         self.file.image_slice = 0
+        # set up order
+        self.stage_sigs = OrderedDict()
+        self.stage_sigs['cam.image_mode'] = 1
+        self.stage_sigs['cam.trigger_mode'] = 0
+        self.stage_sigs['shutter_mode'] = 1
+        self.stage_sigs['manual_trigger'] = 1
+        #self.stage_sigs['cam.acquire'] = 1
+        self.stage_sigs['num_triggers'] = 10
+        
         # monkey patch
         # override with special trigger button, not acquire
         #self._acquisition_signal = self.special_trigger_button
@@ -266,23 +275,18 @@ class EigerManualTrigger(SingleTrigger, EigerBase):
     def stage(self):
         self.file.image_slice = 0
         super().stage()
-        # stag sigs didnt seem t: work
-        # TODO : save original value
-        # and restore in unstage
-        self.cam.trigger_mode.put(0)
-        self.shutter_mode.put(1)  # 'EPICS PV'
-        self.num_triggers.put(10)
-        self.manual_trigger.put(1)
+        # for some reason if doing this too fast in staging
+        # this gets reset. so I do it here instead.
+        # the bit gets unset when done but we should unset again in unstage
+        time.sleep(1)
         self.cam.acquire.put(1)
+        # need another sleep to ensure the sequence ID is updated
         time.sleep(1)
 
     def unstage(self):
         self.file.image_slice = 0
         super().unstage()
-        #self.cam.trigger_mode.put(0)
-        #self.shutter_mode.put(1)  # 'EPICS PV'
-        #self.num_triggers.put(10)
-        self.manual_trigger.put(0)
+        time.sleep(.1)
         self.cam.acquire.put(0)
 
 
