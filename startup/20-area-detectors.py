@@ -421,9 +421,17 @@ set_eiger_defaults(eiger4m)
 eiger4m_manual = EigerManualTrigger('XF:11IDB-ES{Det:Eig4M}', name='eiger4m_manual')
 set_eiger_defaults(eiger4m_manual)
 
-def dscan_manual(det, motor, start, stop, num):
-    det.stage_sigs.update({'num_triggers': num})
-    yield from dscan([det], motor, start, stop, num)
+eiger1m_manual = EigerManualTrigger('XF:11IDB-ES{Det:Eig1M}', name='eiger1m_manual')
+set_eiger_defaults(eiger1m_manual)
+
+eiger500k_manual = EigerManualTrigger('XF:11IDB-ES{Det:Eig500K}', name='eiger500k_manual')
+set_eiger_defaults(eiger500k_manual)
+
+def dscan_manual(dets, motor, start, stop, num):
+    for det in dets:
+        det.stage_sigs.update({'num_triggers': num})
+
+    yield from dscan(dets, motor, start, stop, num)
 
 # from ophyd.sim import motor1
 #RE(dscan_manual(eiger4m_manual, motor1, 0, 1, 10))
