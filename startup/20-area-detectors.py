@@ -325,7 +325,6 @@ class EigerManualTrigger(SingleTrigger, EigerBase):
 # test_trig4M = FastShutterTrigger('XF:11IDB-ES{Trigger:Eig4M}', name='test_trig4M')
 
 
-'''
 ## This renaming should be reversed: no correspondance between CSS screens, PV names and ophyd....
 xray_eye1 = StandardProsilica('XF:11IDA-BI{Bpm:1-Cam:1}', name='xray_eye1')
 xray_eye2 = StandardProsilica('XF:11IDB-BI{Mon:1-Cam:1}', name='xray_eye2')
@@ -366,7 +365,6 @@ for camera in [xray_eye1_writing, xray_eye2_writing,
     camera.read_attrs.append('tiff')
     camera.tiff.read_attrs = []
 
-'''
 
 def set_eiger_defaults(eiger):
     """Choose which attributes to read per-step (read_attrs) or
