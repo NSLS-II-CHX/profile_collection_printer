@@ -418,9 +418,14 @@ def test():
         time.sleep(2)
     time.sleep(1)
 
-    a.disconnect()    
     pump.disconnect(True)
     
 
 # This is the pump
-uvpump =  Ultimus_V_Pump("/dev/ttyUSB0")
+pump =  Ultimus_V_Pump("/dev/ttyUSB0", trigger="DO")
+pump.connect()
+time.sleep(1)
+pump.set_pressure_units('kPa')
+pump.set_vacuum_units('kPa')
+pump.set_pressure(300)
+pump.set_vacuum(0)
