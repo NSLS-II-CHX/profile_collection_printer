@@ -7,5 +7,11 @@ class Printer3D(Device):
 
 printer3d = Printer3D("alexHost:smaract2", name="printer3d")
 
-xray_eye_printer = StandardProsilicaWithTIFF("XF:MOBILE-BI{Mir:1}cam1:NumImages",
+class StandardProsilicaWithTIFFtmp(StandardProsilica):
+    tiff = Cpt(TIFFPluginWithFileStore,
+               suffix='TIFF1:',
+               write_path_template='/tmp/%Y/%m/%d/',
+               root='/tmp',
+               reg=db.reg)
+xray_eye_printer = StandardProsilicaWithTIFFtmp("XF:MOBILE-BI{Mir:1}",
                          name="xray_eye_printer")

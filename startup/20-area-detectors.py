@@ -384,9 +384,11 @@ def set_eiger_defaults(eiger):
                                      'num_images']
 
 
+'''
 # Eiger 500k using internal trigger
 eiger500k_single = EigerSingleTrigger('XF:11IDB-ES{Det:Eig500K}', name='eiger500K_single')
 set_eiger_defaults(eiger500k_single)
+
 
 # Eiger 1M using internal trigger
 eiger1m_single = EigerSingleTrigger('XF:11IDB-ES{Det:Eig1M}',
@@ -425,6 +427,7 @@ set_eiger_defaults(eiger1m_manual)
 eiger500k_manual = EigerManualTrigger('XF:11IDB-ES{Det:Eig500K}', name='eiger500k_manual')
 set_eiger_defaults(eiger500k_manual)
 
+
 def dscan_manual(dets, motor, start, stop, num):
     for det in dets:
         det.stage_sigs.update({'num_triggers': num})
@@ -450,6 +453,7 @@ def manual_count(det=eiger4m_single):
         for det in detectors:
             yield from unstage(det)
 
+'''
 
 # Comment this out to suppress deluge of logging messages.
 # import logging
